@@ -1,366 +1,77 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>On-Call Roster — Emergency Department</title>
-<style>
-  :root{
-    --bg:#0d1117; --row:#161b22; --row-alt:#1a2029; --border:#30363d;
-    --accent:#2f81f7; --text:#e6edf3; --muted:#8b949e;
-    --green:#3fb950; --amber:#d29922;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{height:100%;}
-  body{
-    background:var(--bg); color:var(--text);
-    font-family:"Segoe UI",Tahoma,Arial,sans-serif;
-    padding:10px 14px;
-  }
-
-  /* ---------- HEADER ---------- */
-  header{
-    display:flex; justify-content:space-between; align-items:center;
-    border-bottom:3px solid var(--accent); padding-bottom:8px;
-    margin-bottom:10px; flex-wrap:wrap; gap:10px;
-  }
-  h1{font-size:clamp(18px,2vw,30px); letter-spacing:1px;}
-  h1 span{color:var(--accent);}
-  #clock{
-    font-size:clamp(15px,1.5vw,24px); font-variant-numeric:tabular-nums;
-    color:var(--muted); font-weight:600;
-  }
-  .toolbar{display:flex; gap:8px; flex-wrap:wrap;}
-  button{
-    background:var(--row); color:var(--text); border:1px solid var(--border);
-    border-radius:8px; padding:7px 14px; font-size:14px; cursor:pointer;
-    transition:all .2s;
-  }
-  button:hover{border-color:var(--accent); color:var(--accent);}
-  button.active{background:var(--accent); color:#fff; border-color:var(--accent);}
-
-  #dateBanner{
-    text-align:center; font-size:clamp(15px,1.6vw,24px);
-    font-weight:700; letter-spacing:2px; color:var(--accent);
-    margin-bottom:10px;
-  }
-
-  /* ---------- HORIZONTAL ROWS ---------- */
-  .board{display:flex; flex-direction:column; gap:6px;}
-
-  .row{
-    display:grid;
-    grid-template-columns: 1.5fr 1.4fr 1.4fr 1.4fr 1fr 1.2fr;
-    align-items:center;
-    background:var(--row);
-    border:1px solid var(--border);
-    border-left:5px solid var(--accent);
-    border-radius:8px;
-    padding:6px 12px;
-    gap:10px;
-  }
-  .row:nth-child(even){background:var(--row-alt);}
-  .row:hover{border-color:var(--accent);}
-
-  .dept{
-    font-size:clamp(14px,1.35vw,22px);
-    font-weight:700; text-transform:uppercase;
-    letter-spacing:1px; color:var(--accent);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  }
-
-  .cell{display:flex; flex-direction:column; gap:1px; min-width:0;}
-  .cell .lbl{
-    font-size:clamp(8px,0.62vw,11px); text-transform:uppercase;
-    letter-spacing:1px; color:var(--muted);
-  }
-  .cell .val{
-    font-size:clamp(13px,1.3vw,21px); font-weight:700;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  }
-  .val.duct{color:var(--amber);}
-  .val.gsm{color:var(--green);}
-  .val.empty::before{content:"—"; color:var(--muted); font-weight:400;}
-
-  /* ---------- EDITOR ---------- */
-  .editor{display:none;}
-  .editor.open{display:block;}
-  .editor-head{
-    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
-    margin-bottom:12px; padding:10px; background:var(--row);
-    border:1px solid var(--border); border-radius:10px;
-  }
-  select,input[type=number]{
-    background:var(--bg); color:var(--text); border:1px solid var(--border);
-    border-radius:6px; padding:6px 10px; font-size:14px;
-  }
-  .table-wrap{overflow-x:auto;}
-  table{width:100%; border-collapse:collapse; font-size:14px;}
-  th,td{border:1px solid var(--border); padding:5px 8px; text-align:left;}
-  th{
-    background:#1c2128; color:var(--accent); text-transform:uppercase;
-    font-size:11px; letter-spacing:1px; position:sticky; top:0;
-  }
-  td[contenteditable]{outline:none; min-width:110px;}
-  td[contenteditable]:focus{background:#21262d; box-shadow:inset 0 0 0 2px var(--accent);}
-
-  footer{
-    margin-top:12px; text-align:center; color:var(--muted);
-    font-size:clamp(12px,1vw,16px); letter-spacing:1px;
-  }
-
-  /* ---------- PRINT ---------- */
-  @media print{
-    @page{size:A4 landscape; margin:8mm;}
-    body{background:#fff; color:#000; padding:0;}
-    .toolbar,.editor,.editor-head{display:none !important;}
-    .row{
-      background:#fff !important; border:1px solid #000;
-      border-left:4px solid #000; page-break-inside:avoid;
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Emergency On-Call Roster (Today)</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 12px; }
+    h2 { margin: 0 0 12px 0; }
+    .bar {
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+      margin-bottom: 12px;
     }
-    .dept,.val.duct,.val.gsm{color:#000;}
-    .cell .lbl,#clock,footer,#dateBanner{color:#333;}
-  }
-</style>
+    .date-input { display: flex; gap: 8px; align-items: center; }
+    input[type="date"] { padding: 6px; }
+    button { padding: 7px 12px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
+    th { background: #f4f4f4; text-align: left; }
+    .speciality { width: 22%; font-weight: 700; }
+    .slot-block { min-width: 240px; }
+    .slot-title { font-size: 12px; color: #555; margin-bottom: 4px; font-weight: 700; }
+    .person { font-weight: 600; }
+    .phone { color: #0b57d0; word-break: break-word; }
+    .muted { color: #777; font-size: 12px; }
+    .edit input { width: 100%; padding: 6px; box-sizing: border-box; margin-bottom: 8px; }
+    .grid { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; }
+    .actions { margin-top: 10px; }
+  </style>
 </head>
 <body>
+  <h2>Emergency Department — On-Call Doctors</h2>
 
-<header>
-  <h1>EMERGENCY <span>ON-CALL</span> ROSTER</h1>
-  <div class="toolbar">
-    <button id="btnDisplay" class="active" onclick="setMode('display')">Display</button>
-    <button id="btnEdit" onclick="setMode('edit')">Edit Roster</button>
-    <button onclick="window.print()">Print</button>
+  <div class="bar">
+    <div class="date-input">
+      <span><b>Date:</b></span>
+      <input id="datePicker" type="date" />
+    </div>
+
+    <div>
+      <label style="margin-right:8px;"><b>Mode:</b></label>
+      <select id="modeSelect">
+        <option value="view" selected>View (Emergency Screen)</option>
+        <option value="edit">Edit (Roster)</option>
+      </select>
+    </div>
+
+    <div>
+      <label style="margin-right:8px;"><b>Speciality:</b></label>
+      <select id="specialitySelect"></select>
+    </div>
+
+    <div class="actions">
+      <button id="saveBtn" style="display:none;">Save Changes</button>
+      <span id="status" class="muted"></span>
+    </div>
   </div>
-  <div id="clock">--:--:--</div>
-</header>
 
-<div id="dateBanner">—</div>
+  <table>
+    <thead>
+      <tr>
+        <th class="speciality">Speciality</th>
+        <th>First</th>
+        <th>Second</th>
+      </tr>
+      <tr>
+        <th></th>
+        <th>Name & Phone No.</th>
+        <th>Name & Phone No.</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
 
-<!-- ================= DISPLAY ================= -->
-<main class="board" id="board"></main>
-
-<!-- ================= EDITOR ================= -->
-<section class="editor" id="editor">
-  <div class="editor-head">
-    <label>Month: <select id="selMonth"></select></label>
-    <label>Year: <input type="number" id="inpYear" min="2020" max="2100" style="width:90px;"></label>
-    <label>Specialty: <select id="selSpecialty"></select></label>
-    <button onclick="saveRoster()">Save Roster</button>
-    <button onclick="loadRoster()">Reload</button>
-    <button onclick="clearMonth()">Clear Month</button>
-  </div>
-  <div class="table-wrap">
-    <table id="rosterTable">
-      <thead>
-        <tr>
-          <th style="width:50px;">Day</th>
-          <th>First On-Call</th>
-          <th>Second On-Call</th>
-          <th>Third On-Call</th>
-          <th style="width:120px;">Duct No.</th>
-          <th style="width:140px;">GSM No.</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</section>
-
-<footer>مع دعائي لكن دائمًا</footer>
-
-<script>
-/* ============ CONFIG ============ */
-const SPECIALTIES = [
-  "Medicine","Surgery","Orthopedic","ENT","Ophthalmology",
-  "Nephrology","Cardiology","Pediatrics","Gyne",
-  "Pediatric Surgery","Dental","Dermatology","Psychiatry"
-];
-const MONTHS = ["January","February","March","April","May","June",
-                "July","August","September","October","November","December"];
-const STORAGE_KEY = "oncall_roster_v2";
-const FIELDS = ["first","second","third","duct","gsm"];
-const LABELS = {
-  first:"First On-Call", second:"Second On-Call", third:"Third On-Call",
-  duct:"Duct No.", gsm:"GSM No."
-};
-
-/* ============ DATA ============ */
-function loadAll(){
-  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
-  catch(e){ return {}; }
-}
-function saveAll(d){ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
-function monthKey(y,m){ return y + "-" + String(m+1).padStart(2,"0"); }
-function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
-
-/* ============ DISPLAY ============ */
-let lastRendered = "";
-
-function renderDisplay(){
-  const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
-  const key = monthKey(y,m);
-
-  document.getElementById("dateBanner").textContent =
-    now.toLocaleDateString("en-GB",
-      {weekday:"long", day:"2-digit", month:"long", year:"numeric"}).toUpperCase();
-
-  const all = loadAll();
-  const monthData = all[key] || {};
-  const board = document.getElementById("board");
-  board.innerHTML = "";
-
-  SPECIALTIES.forEach(function(spec){
-    const day = (monthData[spec] && monthData[spec][d]) || {};
-
-    const row = document.createElement("section");
-    row.className = "row";
-
-    let cells = `<div class="dept">${spec}</div>`;
-    FIELDS.forEach(function(f){
-      const v = day[f] || "";
-      let cls = "val";
-      if(f === "duct") cls += " duct";
-      if(f === "gsm")  cls += " gsm";
-      if(!v) cls += " empty";
-      cells += `
-        <div class="cell">
-          <div class="lbl">${LABELS[f]}</div>
-          <div class="${cls}">${v}</div>
-        </div>`;
-    });
-
-    row.innerHTML = cells;
-    board.appendChild(row);
-  });
-
-  lastRendered = key + "-" + d;
-}
-
-/* ============ EDITOR ============ */
-function buildEditor(){
-  const now = new Date();
-  const selM = document.getElementById("selMonth");
-  const selS = document.getElementById("selSpecialty");
-  const inpY = document.getElementById("inpYear");
-
-  if(!selM.options.length){
-    MONTHS.forEach(function(n,i){
-      const o = document.createElement("option");
-      o.value = i; o.textContent = n; selM.appendChild(o);
-    });
-    SPECIALTIES.forEach(function(s){
-      const o = document.createElement("option");
-      o.value = s; o.textContent = s; selS.appendChild(o);
-    });
-  }
-  selM.value = now.getMonth();
-  inpY.value = now.getFullYear();
-  selM.onchange = buildRosterTable;
-  inpY.onchange = buildRosterTable;
-  selS.onchange = buildRosterTable;
-  buildRosterTable();
-}
-
-function buildRosterTable(){
-  const y = parseInt(document.getElementById("inpYear").value,10);
-  const m = parseInt(document.getElementById("selMonth").value,10);
-  const spec = document.getElementById("selSpecialty").value;
-  const n = daysInMonth(y,m);
-  const all = loadAll();
-  const data = (all[monthKey(y,m)] && all[monthKey(y,m)][spec]) || {};
-
-  const tbody = document.querySelector("#rosterTable tbody");
-  tbody.innerHTML = "";
-
-  for(let d=1; d<=n; d++){
-    const r = data[d] || {};
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td style="text-align:center;font-weight:700;">${d}</td>` +
-      FIELDS.map(function(f){
-        return `<td contenteditable="true" data-day="${d}" data-field="${f}">${r[f]||""}</td>`;
-      }).join("");
-    tbody.appendChild(tr);
-  }
-}
-
-function saveRoster(){
-  const y = parseInt(document.getElementById("inpYear").value,10);
-  const m = parseInt(document.getElementById("selMonth").value,10);
-  const spec = document.getElementById("selSpecialty").value;
-  const all = loadAll();
-  const key = monthKey(y,m);
-
-  if(!all[key]) all[key] = {};
-  if(!all[key][spec]) all[key][spec] = {};
-
-  document.querySelectorAll("#rosterTable tbody tr").forEach(function(tr){
-    const cells = tr.querySelectorAll("td[contenteditable]");
-    const day = cells[0].dataset.day;
-    const entry = {};
-    cells.forEach(function(c){ entry[c.dataset.field] = c.textContent.trim(); });
-    all[key][spec][day] = entry;
-  });
-
-  saveAll(all);
-  alert("Roster saved: " + spec + " — " + MONTHS[m] + " " + y);
-  renderDisplay();
-}
-
-function loadRoster(){ buildRosterTable(); }
-
-function clearMonth(){
-  const y = parseInt(document.getElementById("inpYear").value,10);
-  const m = parseInt(document.getElementById("selMonth").value,10);
-  const spec = document.getElementById("selSpecialty").value;
-  if(!confirm("Clear all entries for " + spec + " in " + MONTHS[m] + " " + y + "?")) return;
-  const all = loadAll();
-  const key = monthKey(y,m);
-  if(all[key]) delete all[key][spec];
-  saveAll(all);
-  buildRosterTable();
-  renderDisplay();
-}
-
-/* ============ MODES ============ */
-function setMode(mode){
-  const board = document.getElementById("board");
-  const editor = document.getElementById("editor");
-  const bD = document.getElementById("btnDisplay");
-  const bE = document.getElementById("btnEdit");
-
-  if(mode === "edit"){
-    board.style.display = "none";
-    editor.classList.add("open");
-    bE.classList.add("active"); bD.classList.remove("active");
-    buildEditor();
-  }else{
-    board.style.display = "flex";
-    editor.classList.remove("open");
-    bD.classList.add("active"); bE.classList.remove("active");
-    renderDisplay();
-  }
-}
-
-/* ============ CLOCK & AUTO-ADVANCE ============ */
-function tick(){
-  const now = new Date();
-  document.getElementById("clock").textContent =
-    now.toLocaleString("en-GB",
-      {weekday:"short", day:"2-digit", month:"short",
-       hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false});
-
-  const stamp = monthKey(now.getFullYear(), now.getMonth()) + "-" + now.getDate();
-  if(stamp !== lastRendered && document.getElementById("board").style.display !== "none"){
-    renderDisplay();
-  }
-}
-
-/* ============ INIT ============ */
-renderDisplay();
-tick();
-setInterval(tick, 1000);
-</script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
